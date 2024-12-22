@@ -4,28 +4,23 @@ from selenium.webdriver.common.keys import Keys
 import base64
 import time
 
-# Настройка WebDriver с игнорированием SSL-ошибок
 options = webdriver.ChromeOptions()
-options.add_argument('--headless')  # Запуск без графического интерфейса (если нужно)
-options.add_argument('--ignore-certificate-errors')  # Игнорируем SSL ошибки
-options.add_argument('--disable-blink-features=AutomationControlled')  # Отключаем автоматическое управление браузером
+options.add_argument('--headless') 
+options.add_argument('--ignore-certificate-errors')
+options.add_argument('--disable-blink-features=AutomationControlled') 
 
 driver = webdriver.Chrome(options=options)
 
-# Открываем первую вкладку с конвертером Base64
 driver.get("https://www.base64encode.org/")
 
-# Открываем вторую и третью вкладки с Википедией
 driver.execute_script("window.open('https://ru.wikipedia.org', '_blank');")  # Русская вики
 driver.execute_script("window.open('https://en.wikipedia.org', '_blank');")  # Английская вики
 
-# Переключаемся на русскую Википедию (вкладка 1)
 driver.switch_to.window(driver.window_handles[1])
 
 # Ожидаем загрузки страницы
 time.sleep(3)
 
-# Открываем 5 случайных статей на русской Википедии
 for _ in range(5):
     try:
         # Находим и кликаем по ссылке "Случайная статья" через XPath

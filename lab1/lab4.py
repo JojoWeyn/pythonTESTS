@@ -1,53 +1,66 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
 import time
+import csv
 
-# Создаем экземпляр драйвера
+#сайланкин дамир 107b
 driver = webdriver.Chrome()
 
-# Переходим на сайт vk.com/video
-driver.get("https://vk.com/video")
-time.sleep(5) # Ждем, пока страница загрузится
+driver.get('https://vk.com/video')
 
-# Получаем ссылки на видео из разделов "Для вас" и "Тренды"
-for section in ["Для вас", "Тренды"]:
-    driver.find_element(By.XPATH,'//*[@id="content"]/div[1]/div[{section}]').click()
-    links = driver.find_elements(By.CSS_SELECTOR,'div.page_block div a')
-    for link in links:
-        print(link.get_attribute('href'))
+time.sleep(0.5)
 
-# Сохраняем полученные ссылки в файл
-with open('links.txt', 'w') as f:
-    for link in links:
-        f.write(link.get_attribute('href') + '\n')
-
-# Переходим к каждому видео и получаем информацию
-def get_video_info(url):
-    driver.get(url)
-    time.sleep(2)
+def get_video_links():
+    video_links = []
     
-    video_title = driver.find_elements(By.CSS_SELECTOR,'#page_header > h1').text
-    views = driver.find_elements(By.CSS_SELECTOR,'#video_plays > span:nth-child(1)').text
-    likes = driver.find_elements(By.CSS_SELECTOR,'#video_plays > span:nth-child(2)').text
-    date = driver.find_elements(By.CSS_SELECTOR,'#date').text
-    channel_name = driver.find_elements(By.CSS_SELECTOR,'#channel_info > strong').text
-    subscribers = driver.find_elements(By.CSS_SELECTOR,'#subscribers').text
+
+    links = driver.find_elements(By.XPATH, '//a[contains(@href, "/video")]')
+    for link in links:
+        href = link.get_attribute('href')
+        print(href)
+        if href and "video" in href:
+            video_links.append(href)
     
-    return [video_title, views, likes, date, channel_name, subscribers]
+    return video_links
 
-# Проходимся по всем ссылкам и собираем данные
-results = []
-for url in links:
-    results.append(get_video_info(url.get_attribute('href')))
+video_links = get_video_links()
+print(f"Количество ссылок на видео: {len(video_links)}")
 
-# Выводим результаты в консоль
-print("\n".join([", ".join(map(str, row)) for row in results]))
+def get_video_info(video_url):
+    try:
+        driver.get(video_url)
+        time.sleep(2) 
 
-# Сохраняем результаты в файл
-with open('video_data.csv', 'w') as f:
-    f.write('\n'.join([", ".join(map(str, row)) for row in results]) + '\n')
+        title = driver.find_element(By.CSS_SELECTOR, 'div[data-testid="video_modal_title"]').text
+        views_text = driver.find_element(By.CSS_SELECTOR, 'div[data-testid="video_modal_additional_info"]').text
+        views_data = views_text.split('·')
+        views = views_data[0].strip()
+        creation_date = views_data[1].strip() 
+        likes = driver.find_element(By.CSS_SELECTOR, 'div[data-testid="video_modal_like_button"]').text
+        channel_name = driver.find_element(By.CSS_SELECTOR, 'a.vkuiLink.vkitLink__link--WXYoI.vkitLink__primary--ZZz2Q.vkuiTappable.vkuiTappable--hasPointer-none.vkuiClickable__resetLinkStyle.vkuiClickable__host.vkuiClickable__realClickable.vkui-focus-visible.vkuiRootComponent').text
+        followers = driver.find_element(By.CSS_SELECTOR, 'span.vkuiSimpleCell__text.vkuiSimpleCell__subtitle.vkuiFootnote.vkuiTypography.vkuiRootComponent').text
 
-# Закрываем драйвер
+        return [title, views, creation_date, likes, channel_name, followers]
+
+    except Exception as e:
+        print(f"Ошибка при обработке видео {video_url}: {e}")
+        return None
+
+video_info = []
+for link in video_links:
+    info = get_video_info(link)
+    print(f"Информация о видео:{link}, {info}")
+    if info:
+        video_info.append(info)
+
+with open('video_data.csv', mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+
+    writer.writerow([len(video_links)])
+
+    writer.writerow(['title', 'views', 'creation_date', 'likes', 'channel_name', 'followers'])
+
+    for info in video_info:
+        writer.writerow(info)
+
 driver.quit()
