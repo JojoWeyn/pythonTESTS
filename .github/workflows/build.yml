@@ -22,7 +22,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'  # Укажите необходимую версию Python
+        python-version: '3.12'  # Укажите необходимую версию Python
 
     # Шаг 3: Установка зависимостей
     - name: Install dependencies
