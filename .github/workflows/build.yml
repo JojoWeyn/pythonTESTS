@@ -1,43 +1,38 @@
 name: Python CI
 
-# Этот workflow будет запускаться при пушах в главную ветку (main) или pull requests.
 on:
   push:
     branches:
-      - main  # Убедитесь, что ваша основная ветка называется main (или используйте вашу ветку)
+      - main
   pull_request:
     branches:
-      - main  # При создании pull request в основную ветку
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Для выполнения на последней версии Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
-    # Шаг 1: Проверка репозитория
     - name: Checkout code
-      uses: actions/checkout@v2  # Клонирует ваш репозиторий в текущую рабочую среду
+      uses: actions/checkout@v2
 
-    # Шаг 2: Настройка Python
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.12'  # Укажите необходимую версию Python
+        python-version: '3.9'
 
-    # Шаг 3: Установка зависимостей
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip  # Обновление pip
-        pip install -r requirements.txt  # Установка зависимостей из requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-    # Шаг 4: Запуск тестов
     - name: Run tests
       run: |
-        pytest --junitxml=report.xml  # Запуск pytest с параметром для генерации отчета в формате JUnit XML
+        pytest --junitxml=report.xml
 
-    # Шаг 5: Загрузка отчета о тестах
+    # Update this to use actions/upload-artifact@v3
     - name: Upload test results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: test-report
-        path: report.xml  # Отчет о тестах будет доступен как артефакт после выполнения пайплайна
+        path: report.xml
