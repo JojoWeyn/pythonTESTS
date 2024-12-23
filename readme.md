@@ -257,7 +257,7 @@ window_handles = driver.window_handles
 - `driver.current_window_handle` — дескриптор текущего окна.
 - `driver.window_handles` — список всех доступных дескрипторов окон.
 
----
+
 
 ### 2. Переключение между окнами
 Чтобы переключиться на другое окно или вкладку, используйте метод `switch_to.window` с указанием дескриптора окна:
@@ -287,7 +287,7 @@ driver.switch_to.window(window_handles[1])
 print("Текущий URL:", driver.current_url)
 ```
 
----
+
 
 ### 3. Закрытие ненужного окна
 Чтобы закрыть текущее окно, используйте метод:
@@ -307,7 +307,7 @@ driver.close()
 driver.switch_to.window(window_handles[0])
 ```
 
----
+
 
 ### 4. Обработка окон в цикле
 Если необходимо закрыть определённые окна или обработать каждую вкладку, можно использовать цикл:
@@ -321,7 +321,7 @@ for handle in driver.window_handles:
         driver.close()
 ```
 
----
+
 
 ### 5. Ожидание появления новой вкладки
 Если новая вкладка открывается не мгновенно, рекомендуется использовать `WebDriverWait` для ожидания:
@@ -337,7 +337,7 @@ WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
 driver.switch_to.window(driver.window_handles[-1])
 ```
 
----
+
 
 ### 6. Возвращение к основной вкладке
 Чтобы вернуться к основной (первой) вкладке:
@@ -347,7 +347,7 @@ main_window = driver.window_handles[0]
 driver.switch_to.window(main_window)
 ```
 
----
+
 
 ## Полный пример: работа с несколькими окнами
 ```python
@@ -385,7 +385,6 @@ print("Текущий URL после возвращения:", driver.current_ur
 driver.quit()
 ```
 
----
 
 ## Часто используемые методы для работы с окнами/вкладками
 
