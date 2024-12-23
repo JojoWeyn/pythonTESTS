@@ -3,90 +3,82 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import time
 
-# Инициализация веб-драйвера
+def translate(driver, text):
+    """Translate text using Google Translate."""
+
+    driver.switch_to.window(driver.window_handles[0])
+
+
+    input_box = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[aria-label='Исходный текст']"))
+    )
+    input_box.clear()
+    input_box.send_keys(text)
+    time.sleep(3)
+
+    translated_text_element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "div.lRu31"))
+    )
+    
+    translated_text = translated_text_element.text
+    input_box.clear()
+    
+    driver.switch_to.window(driver.window_handles[1])
+    
+    return translated_text
+    
 driver = webdriver.Chrome()
 
 try:
-    # Открыть Яндекс Переводчик
-    driver.get("https://translate.google.com/")
-    translator_tab = driver.current_window_handle  # Сохраняем вкладку переводчика
 
-    # Открыть новую вкладку для стихов Пушкина
+    driver.get("https://translate.google.com/?hl=ru&sl=auto&tl=en&op=translate")
+
+
     driver.switch_to.new_window('tab')
     driver.get("https://www.culture.ru/literature/poems/author-aleksandr-pushkin")
-    poems_tab = driver.current_window_handle  # Сохраняем вкладку со стихами
 
-    # Извлечение ссылок на первые 2 стихотворения
-    poem_links = WebDriverWait(driver, 20).until(
-        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a.ICocV"))
-    )
-    poem_links = [poem.get_attribute("href") for poem in poem_links[:2]]  # Берем только первые 2 стихотворения
+    poems = driver.find_elements(by="css selector", value="a.ICocV")
+    poem_links = [poem.get_attribute("href") for poem in poems[:5]]
 
-    # Словарь для хранения результатов
-    results = {}
+    with open('translated_poems.txt', 'w', encoding='utf-8') as file:
+        for link in poem_links:
 
-    for i, link in enumerate(poem_links, start=1):
-        # Переход к ссылке стихотворения
-        driver.get(link)
+            driver.switch_to.new_window('tab')
+            driver.get(link)
 
-        # Попытка развернуть текст, если есть кнопка "Развернуть"
-        try:
-            expand_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[text()='Развернуть']"))
+   
+            try:
+                expand_button = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[text()='Развернуть']"))
+                )
+                expand_button.click()
+            except TimeoutException:
+                pass  
+
+
+            title = WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'div.rrWFt'))
+            ).text
+
+            poem_parts = WebDriverWait(driver, 20).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div[data-content='text']"))
             )
-            expand_button.click()
-        except TimeoutException:
-            pass  # Если кнопки нет, продолжаем
+            poem_text = "\n".join(part.text for part in poem_parts)
 
-        # Извлечение текста стихотворения
-        title = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.rrWFt"))
-        ).text
+            translated_text = translate(driver, poem_text)
 
-        poem_parts = WebDriverWait(driver, 20).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div[data-content='text']"))
-        )
-        original_text = "\n".join([part.text for part in poem_parts])
+            file.write(f"Title: {title}\n")
+            file.write("Original:\n")
+            file.write(poem_text + "\n\n")
+            file.write("Translation:\n")
+            file.write(translated_text + "\n\n")
+            file.write("=" * 50 + "\n\n")
 
-        # Переключение на вкладку переводчика
-        driver.switch_to.window(translator_tab)
-
-        # Перевод текста
-        input_box = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".er8xn"))
-        )
-        input_box.clear()
-        input_box.send_keys(original_text)
-
-        # Делаем ожидание перевода чуть дольше, чтобы полностью загрузился текст
-        try:
-            translated_text_element = WebDriverWait(driver, 5000).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "span[jsname='W297wb']"))
-            )
-            translated_text = translated_text_element.text
-        except TimeoutException:
-            translated_text = "Перевод не был получен."
-
-        # Сохранение результата
-        results[i] = {
-            "title": title,
-            "original": original_text,
-            "translated": translated_text
-        }
-
-        # Возвращение на вкладку со стихами
-        driver.switch_to.window(poems_tab)
-
-    # Запись в текстовый файл
-    with open("translated_poems.txt", "w", encoding="utf-8") as file:
-        for i, data in results.items():
-            file.write(f"Стихотворение {i}: {data['title']}\n")
-            file.write("Оригинал:\n")
-            file.write(data['original'] + "\n\n")
-            file.write("Перевод:\n")
-            file.write(data['translated'] + "\n\n")
+            driver.close()
+            driver.switch_to.window(driver.window_handles[-1])
 
 finally:
-    # Закрытие браузера
+
     driver.quit()
